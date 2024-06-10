@@ -32,7 +32,7 @@ getPRISMpoint<-function(lat,lon,startDate,endDate){
   
   #download daily PRISM 
   jsonQuery=paste0('{"loc":"',lon,',',lat,'","sdate":"',startDate,'","edate":"',endDate,'","grid":"21",
-                                    "meta":"ll,elev","elems":[{"name":"mly_pcpn","units":"in"},{"name":"mly_mint","units":"degreeF"},{"name":"mly_maxt","units":"degreeC"}]}')
+                                    "meta":"ll,elev","elems":[{"name":"mly_pcpn","units":"mm"},{"name":"mly_mint","units":"degreeC"},{"name":"mly_maxt","units":"degreeC"}]}')
   
   outData<-postForm("http://data.rcc-acis.org/GridData",.opts = list(postfields = jsonQuery, 
                                                                      httpheader = c('Content-Type' = 'application/json', Accept = 'application/json')))
@@ -41,6 +41,11 @@ getPRISMpoint<-function(lat,lon,startDate,endDate){
   data<-data.frame(outData$data)
   #
   
+  # get metadata
+  # ll<-data.frame(matrix(unlist(outData$meta), nrow=length(outData$meta), byrow=T))
+  meta<-outData$meta
+  meta<-do.call(cbind.data.frame, meta)
+
   # character to numeric conversion
   data[,2:4]<- data[,2:4] %>% mutate_if(is.character, as.numeric)
   # set colnames
@@ -55,6 +60,9 @@ getPRISMpoint<-function(lat,lon,startDate,endDate){
   data$month<-as.numeric(format(data$date, "%m"))
   data$year<-as.numeric(format(data$date, "%Y"))
   ######
+  
+  # create list to return
+  data<-list(data,meta)
   
   # return data
   return(data)
