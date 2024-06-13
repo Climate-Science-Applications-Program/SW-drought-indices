@@ -12,7 +12,12 @@ source('calcZscore.R')
 
 
 # GET DATA
+#Kaibab 36.46869260303463, -112.24456989458989
+lat<-36.46
+lon<-(-112.24)
 # Tucson 32.12933603670422, -110.94978964298414
+lat<-32.13
+lon<-(-110.99)
 # Prescott 34.54491250593747, -112.46996711781452
 lat<-34.54
 lon<-(-112.45)
@@ -91,7 +96,7 @@ climo<-climo %>% group_by(month) %>%
                             harPrec=sum(harPrec, na.rm=TRUE)/n())
 climo$monthAbb<-as.factor(month.abb[climo$month])
 longClimo<-tidyr::pivot_longer(climo, cols = 3:9, names_to = "vars", values_to = "values")
-longClimo$varType<-ifelse(longClimo$vars %in% c("minT","maxT","avgT"),"temps","waterBal")
+longClimo$varType<-ifelse(longClimo$vars %in% c("minT","maxT","avgT"),"temps","PET")
 
 # climograph
 ggplot(longClimo, aes(month,values, color=vars))+
@@ -100,12 +105,12 @@ ggplot(longClimo, aes(month,values, color=vars))+
   scale_x_continuous(breaks = seq(1, 12, by = 1))+
   theme_bw()+
   ylab("deg C and mm")+
-  ggtitle("Monthly Average Temperature and Water Balance Vars")
+  ggtitle("Monthly Average Temperature and PET estimates")
 
 # time series plots - all months
 ggplot(data, aes(year, maxT-minT, color=as.factor(month)))+
-  geom_point()+
-  geom_smooth(method = "lm")+
+  geom_point(alpha=0.0)+
+  geom_smooth(method = "lm", se=FALSE)+
   theme_bw()
 # annual time series plots
 annClimo<-cbind.data.frame(data,tho,har,harPrec)
@@ -115,12 +120,12 @@ annClimo<-annClimo %>% group_by(year) %>%
             maxT=mean(maxT, na.rm = TRUE),
             avgT=mean(avgT, na.rm = TRUE),
             #precip=sum(precip, na.rm = TRUE),
-            tho=sum(precip-tho, na.rm=TRUE),
-            har=sum(precip-har, na.rm=TRUE),
-            harPrec=sum(precip-harPrec, na.rm=TRUE))
+            tho=sum(tho, na.rm=TRUE),
+            har=sum(har, na.rm=TRUE))
+            #harPrec=sum(harPrec, na.rm=TRUE))
 
-longAnnClimo<-tidyr::pivot_longer(annClimo, cols = 3:8, names_to = "vars", values_to = "values")
-longAnnClimo$varType<-ifelse(longAnnClimo$vars %in% c("minT","maxT","avgT"),"temps","waterBal")
+longAnnClimo<-tidyr::pivot_longer(annClimo, cols = 3:7, names_to = "vars", values_to = "values")
+longAnnClimo$varType<-ifelse(longAnnClimo$vars %in% c("minT","maxT","avgT"),"temps","PET")
 # plot
 ggplot(longAnnClimo, aes(year,values, color=vars))+
   geom_line()+
@@ -128,7 +133,7 @@ ggplot(longAnnClimo, aes(year,values, color=vars))+
   theme_bw()+
   geom_smooth(method = "lm")+
   ylab("deg C and mm")+
-  ggtitle("Annual Average Temperature and Water Balance Vars")+
+  ggtitle("Annual Average Temperature and total PET (North Kaibab)")+
   theme_bw()  
 
 #####
@@ -261,7 +266,7 @@ colnames(harZ)[3:(length(scales)+2)]<-paste0("har",colnames(harZ)[3:(length(scal
 
 # drought index time series plots
 # 3-month scale
-temp<-cbind.data.frame(data$date,data$month,data$year,fullSPI$spiFull3,fullSPEI_har$speiFull_har3,fullSPEI_th$speiFull_th3, tempZ$tempZ_3)
+temp<-cbind.data.frame(data$date,data$month,data$year,fullSPI$spiFull3,fullSPEI_har$speiFull_har3,fullSPEI_th$speiFull_th3, tavgZ$tavgZ_3)
 colnames(temp)<-c("date","month","year","spi3","spei3_har","spei3_th","tavgZ")
 temp<-tidyr::pivot_longer(temp, cols = 4:7, names_to = "vars", values_to = "values")
 
@@ -269,21 +274,22 @@ ggplot(temp, aes(date, values, color=vars))+
   geom_line()+
   geom_hline(yintercept = 0)+
   scale_x_date(date_breaks = "6 months", 
-               labels=scales::date_format("%b-%Y"),
-               limits = as.Date(c('2001-01-01','2003-01-01')))+
+               labels=scales::date_format("%m-%Y"),
+               limits = as.Date(c('2011-01-01','2013-01-01')))+
   theme_bw()
 
 # 12-month scale
-temp<-cbind.data.frame(data$date,data$month,data$year,fullSPI$spiFull12,fullSPEI_har$speiFull_har12,fullSPEI_th$speiFull_th12, tempZ$tempZ_12)
+temp<-cbind.data.frame(data$date,data$month,data$year,fullSPI$spiFull12,fullSPEI_har$speiFull_har12,fullSPEI_th$speiFull_th12, tavgZ$tavgZ_12)
 colnames(temp)<-c("date","month","year","spi12","spei12_har","spei12_th","tavgZ")
 temp<-tidyr::pivot_longer(temp, cols = 4:7, names_to = "vars", values_to = "values")
 
 ggplot(temp, aes(date, values, color=vars))+
+#ggplot(subset(temp, vars %in% c("tavgZ","spei12_har")), aes(date, values, color=vars))+
   geom_line()+
   geom_hline(yintercept = 0)+
-  scale_x_date(date_breaks = "6 months", 
+  scale_x_date(date_breaks = "2 months", 
                labels=scales::date_format("%b-%Y"),
-               limits = as.Date(c('2000-01-01','2022-01-01')))+
+               limits = as.Date(c('2011-01-01','2013-01-01')))+
   theme_bw()
 
 # 12-month scale --- SPI-SPEI difference plots
